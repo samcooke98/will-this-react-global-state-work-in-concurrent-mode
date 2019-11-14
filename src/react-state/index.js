@@ -1,6 +1,6 @@
-import React, { useTransition } from 'react';
+import React from 'react';
 import { createStore } from 'redux';
-import { Provider, useSelector, useDispatch } from 'react-redux';
+import { useSubscription } from 'use-subscription';
 
 import {
   syncBlock,
@@ -12,20 +12,26 @@ import {
 } from '../common';
 
 const store = createStore(reducer);
+window.store = store;
 
-const Counter = React.memo(() => {
-  const count = useSelector(state => state.count);
+const Counter = React.memo(({count}) => {
   syncBlock();
   return <div className="count">{count}</div>;
 }, shallowEqual);
 
 const Main = () => {
-  const dispatch = useDispatch();
-  const count = useSelector(state => state.count);
+  const [remoteCount, setRemoteCount] = React.useState(0);
+
   useCheckTearing();
+
   useRegisterIncrementDispatcher(React.useCallback(() => {
-    dispatch({ type: 'increment' });
-  }, [dispatch]));
+    // This will be handled outside of the React lifecycle.
+    // This has a side-effect that means the event will be processed at a lower
+    // priority than an event handler normally would, so React will still interrupt
+    // updates when you click
+    setRemoteCount(c => c + 1)
+  }, []));
+
   const [localCount, localIncrement] = React.useReducer(c => c + 1, 0);
   const normalIncrement = () => {
     dispatch({ type: 'increment' });
@@ -38,12 +44,9 @@ const Main = () => {
   };
   return (
     <div>
-      <button type="button" id="normalIncrement" onClick={normalIncrement}>Increment shared count normally (two clicks to increment one)</button>
-      <button type="button" id="transitionIncrement" onClick={transitionIncrement}>Increment shared count in transition (two clicks to increment one)</button>
-      <span id="pending">{isPending && 'Pending...'}</span>
-      <h1>Shared Count</h1>
-      {ids.map(id => <Counter key={id} />)}
-      <div className="count">{count}</div>
+      <h1>Remote Count</h1>
+      {ids.map(id => <Counter key={id} count={remoteCount} />)}
+      <div className="count">{remoteCount}</div>
       <h1>Local Count</h1>
       {localCount}
       <button type="button" id="localIncrement" onClick={localIncrement}>Increment local count</button>
@@ -52,9 +55,9 @@ const Main = () => {
 };
 
 const App = () => (
-  <Provider store={store}>
+  <React.Fragment>
     <Main />
-  </Provider>
+  </React.Fragment>
 );
 
 export default App;
