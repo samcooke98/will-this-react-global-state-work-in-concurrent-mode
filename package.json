@@ -17,6 +17,7 @@
     "build:mobx-react-lite": "NAME=mobx-react-lite webpack",
     "build:react-state": "NAME=react-state webpack",
     "build:rxjs-use-sub": "NAME=rxjs-use-sub webpack",
+    "build:mobxjs-configured": "NAME=mobx-react-lite-configured webpack",
     "build-all": "run-s build:*"
   },
   "keywords": [
